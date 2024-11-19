@@ -1,199 +1,192 @@
-class Node:
-    def __init__(self, key):
-        self.key = key
+class AVLNode:
+    def __init__(self, value):
+        self.value = value  # The value will be used as the key as well
         self.left = None
         self.right = None
-        self.height = 1  # height of the node
+        self.height = 1
 
 class AVLTree:
-    # Get the height of the node
-    @staticmethod
-    def height(N):
-        if N is None:
-            return 0
-        return N.height
+    def __init__(self):
+        self.root = None
+
+    # Helper function to get the height of a node
+    def height(self, node):
+        return node.height if node else 0
+
+    # Helper function to calculate the balance factor of a node
+    def get_balance(self, node):
+        return self.height(node.left) - self.height(node.right) if node else 0
 
     # Right rotation
-    @staticmethod
-    def right_rotate(y):
+    def right_rotate(self, y):
         x = y.left
         T2 = x.right
 
-        # Perform rotation
         x.right = y
         y.left = T2
 
-        # Update heights
-        y.height = max(AVLTree.height(y.left), AVLTree.height(y.right)) + 1
-        x.height = max(AVLTree.height(x.left), AVLTree.height(x.right)) + 1
+        y.height = 1 + max(self.height(y.left), self.height(y.right))
+        x.height = 1 + max(self.height(x.left), self.height(x.right))
 
-        # Return new root
         return x
 
     # Left rotation
-    @staticmethod
-    def left_rotate(x):
+    def left_rotate(self, x):
         y = x.right
         T2 = y.left
 
-        # Perform rotation
         y.left = x
         x.right = T2
 
-        # Update heights
-        x.height = max(AVLTree.height(x.left), AVLTree.height(x.right)) + 1
-        y.height = max(AVLTree.height(y.left), AVLTree.height(y.right)) + 1
+        x.height = 1 + max(self.height(x.left), self.height(x.right))
+        y.height = 1 + max(self.height(y.left), self.height(y.right))
 
-        # Return new root
         return y
 
-    # Get the balance factor of the node
-    @staticmethod
-    def get_balance(N):
-        if N is None:
-            return 0
-        return AVLTree.height(N.left) - AVLTree.height(N.right)
+    # Insert a new value into the tree
+    def insert(self, value):
+        self.root = self._insert(self.root, value)
 
-    # Insert a new key in the AVL tree
-    @staticmethod
-    def insert(node, key):
-        # 1. Perform the normal BST insertion
-        if node is None:
-            return Node(key)
+    # Recursive insert helper method
+    def _insert(self, node, value):
+        if not node:
+            return AVLNode(value)
 
-        if key < node.key:
-            node.left = AVLTree.insert(node.left, key)
-        elif key > node.key:
-            node.right = AVLTree.insert(node.right, key)
-        else:  # Duplicate keys not allowed
-            return node
+        if value < node.value:
+            node.left = self._insert(node.left, value)
+        else:
+            node.right = self._insert(node.right, value)
 
-        # 2. Update height of this ancestor node
-        node.height = max(AVLTree.height(node.left), AVLTree.height(node.right)) + 1
+        node.height = 1 + max(self.height(node.left), self.height(node.right))
 
-        # 3. Get the balance factor of this node
-        balance = AVLTree.get_balance(node)
+        # Balance the node
+        balance = self.get_balance(node)
 
-        # If this node becomes unbalanced, then there are 4 cases
+        # Left-Left case
+        if balance > 1 and value < node.left.value:
+            return self.right_rotate(node)
 
-        # Left Left Case
-        if balance > 1 and key < node.left.key:
-            return AVLTree.right_rotate(node)
+        # Right-Right case
+        if balance < -1 and value > node.right.value:
+            return self.left_rotate(node)
 
-        # Right Right Case
-        if balance < -1 and key > node.right.key:
-            return AVLTree.left_rotate(node)
+        # Left-Right case
+        if balance > 1 and value > node.left.value:
+            node.left = self.left_rotate(node.left)
+            return self.right_rotate(node)
 
-        # Left Right Case
-        if balance > 1 and key > node.left.key:
-            node.left = AVLTree.left_rotate(node.left)
-            return AVLTree.right_rotate(node)
-
-        # Right Left Case
-        if balance < -1 and key < node.right.key:
-            node.right = AVLTree.right_rotate(node.right)
-            return AVLTree.left_rotate(node)
+        # Right-Left case
+        if balance < -1 and value < node.right.value:
+            node.right = self.right_rotate(node.right)
+            return self.left_rotate(node)
 
         return node
 
-    # Find the node with the smallest value
-    @staticmethod
-    def min_value_node(node):
-        current = node
-        while current.left is not None:
-            current = current.left
-        return current
+    # In-order traversal of the tree
+    def inorder(self, root):
+        if root:
+            self.inorder(root.left)
+            print(root.value, end=" ")
+            self.inorder(root.right)
 
-    # Delete a node from the AVL tree
-    @staticmethod
-    def delete_node(root, key):
-        # STEP 1: PERFORM STANDARD BST DELETE
-        if root is None:
+    # Public method to start in-order traversal
+    def print_inorder(self):
+        self.inorder(self.root)
+        print()
+    
+    def search(self, key):
+        return self._search_helper(self.root, key)
+
+    # Recursive helper function for searching
+    def _search_helper(self, node, key):
+        if node is None:  # Base case: node not found
+            return None
+
+        if node.value == key:  # If the current node is the target
+            return node
+
+        elif key < node.value:  # If the target is smaller, search in the left subtree
+            return self._search_helper(node.left, key)
+
+        else:  # If the target is larger, search in the right subtree
+            return self._search_helper(node.right, key)
+
+    def delete(self, value):
+        self.root = self._delete(self.root, value)
+
+    def _delete(self, root, value):
+        if not root:
             return root
 
-        # If the key to be deleted is smaller than the root's key
-        if key < root.key:
-            root.left = AVLTree.delete_node(root.left, key)
-
-        # If the key to be deleted is greater than the root's key
-        elif key > root.key:
-            root.right = AVLTree.delete_node(root.right, key)
-
-        # If key is same as root's key, then this is the node to be deleted
-        else:
+        # Find the node to delete
+        if value < root.value:
+            root.left = self._delete(root.left, value)
+        elif value > root.value:
+            root.right = self._delete(root.right, value)
+        else:  # Node to be deleted found
             # Node with only one child or no child
-            if root.left is None or root.right is None:
-                temp = root.left if root.left else root.right
+            if not root.left:
+                temp = root.right
+                root = None
+                return temp
+            elif not root.right:
+                temp = root.left
+                root = None
+                return temp
 
-                if temp is None:  # No child case
-                    root = None
-                else:  # One child case
-                    root = temp
+            # Node with two children: Get the inorder successor (smallest in the right subtree)
+            temp = self._min_value_node(root.right)
 
-            else:
-                # Node with two children: Get the inorder successor (smallest in right subtree)
-                temp = AVLTree.min_value_node(root.right)
+            # Copy the inorder successor's content to this node
+            root.value = temp.value
 
-                # Copy the inorder successor's data to this node
-                root.key = temp.key
+            # Delete the inorder successor
+            root.right = self._delete(root.right, temp.value)
 
-                # Delete the inorder successor
-                root.right = AVLTree.delete_node(root.right, temp.key)
-
-        # STEP 2: UPDATE HEIGHT OF CURRENT NODE
-        if root is None:
+        # If the tree only has one node, return it
+        if not root:
             return root
 
-        root.height = max(AVLTree.height(root.left), AVLTree.height(root.right)) + 1
+        # Update height of the current node
+        root.height = 1 + max(self.height(root.left), self.height(root.right))
 
-        # STEP 3: GET THE BALANCE FACTOR OF THIS NODE
-        balance = AVLTree.get_balance(root)
+        # Balance the tree
+        balance = self.get_balance(root)
 
-        # If this node becomes unbalanced, then there are 4 cases
-        if balance > 1 and AVLTree.get_balance(root.left) >= 0:
-            return AVLTree.right_rotate(root)
+        # Left-Left case
+        if balance > 1 and self.get_balance(root.left) >= 0:
+            return self.right_rotate(root)
 
-        if balance > 1 and AVLTree.get_balance(root.left) < 0:
-            root.left = AVLTree.left_rotate(root.left)
-            return AVLTree.right_rotate(root)
+        # Right-Right case
+        if balance < -1 and self.get_balance(root.right) <= 0:
+            return self.left_rotate(root)
 
-        if balance < -1 and AVLTree.get_balance(root.right) <= 0:
-            return AVLTree.left_rotate(root)
+        # Left-Right case
+        if balance > 1 and self.get_balance(root.left) < 0:
+            root.left = self.left_rotate(root.left)
+            return self.right_rotate(root)
 
-        if balance < -1 and AVLTree.get_balance(root.right) > 0:
-            root.right = AVLTree.right_rotate(root.right)
-            return AVLTree.left_rotate(root)
+        # Right-Left case
+        if balance < -1 and self.get_balance(root.right) > 0:
+            root.right = self.right_rotate(root.right)
+            return self.left_rotate(root)
 
         return root
+        
+    def _min_value_node(self, node):
+        if node is None or node.left is None:
+            return node
+        return self._min_value_node(node.left)
 
-    # Preorder traversal
-    @staticmethod
-    def pre_order(root):
-        if root is not None:
-            print("{0} ".format(root.key), end="")
-            AVLTree.pre_order(root.left)
-            AVLTree.pre_order(root.right)
 
-# Driver Code
+# Example Usage:
 if __name__ == "__main__":
-    root = None
+    tree = AVLTree()
 
-    # Insert nodes into the AVL Tree
-    root = AVLTree.insert(root, 9)
-    root = AVLTree.insert(root, 5)
-    root = AVLTree.insert(root, 10)
-    root = AVLTree.insert(root, 0)
-    root = AVLTree.insert(root, 6)
-    root = AVLTree.insert(root, 11)
-    root = AVLTree.insert(root, -1)
-    root = AVLTree.insert(root, 1)
-    root = AVLTree.insert(root, 2)
+    # Insert values into the AVL Tree
+    values = [10, 20, 30, 15, 25, 5]
+    for value in values:
+        tree.insert(value)
 
-    print("Preorder traversal of the constructed AVL tree is")
-    AVLTree.pre_order(root)
-
-    # Delete a node from the tree
-    root = AVLTree.delete_node(root, 10)
-
-    print("\nPreorder traversal after deletion of 10")
-    AVLTree.pre_order(root)
+    print("Inorder traversal of the AVL Tree:")
+    tree.print_inorder()
