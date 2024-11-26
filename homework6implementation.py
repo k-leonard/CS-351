@@ -1,0 +1,206 @@
+
+import time
+import random
+import heapq
+
+class Node:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def __eq__(self, other):
+        if isinstance(other, Node):
+            return self.x == other.x and self.y == other.y
+        return False
+
+    def __hash__(self):
+        return hash((self.x, self.y))
+
+    def __lt__(self, other):
+        
+        if isinstance(other, Node):
+            return (self.x, self.y) < (other.x, other.y) 
+        return False
+
+    def __str__(self):
+        return f"Node({self.x}, {self.y})" 
+
+def zero_heuristic(a, b):
+    # A non-informative heuristic that always returns zero
+    return 0
+
+
+def heuristic(a, b):
+    return abs(a.x - b.x) + abs(a.y - b.y)
+
+def generate_graph(num_nodes, density=0.2):
+   
+    nodes = [Node(x, y) for x in range(num_nodes) for y in range(num_nodes)]
+    
+   
+    graph = {node: {} for node in nodes}
+
+    
+    for node in nodes:
+        for neighbor in nodes:
+            if random.random() < density and node != neighbor:
+                graph[node][neighbor] = random.randint(1, 10)
+
+    return graph, nodes[0], nodes[-1]  
+
+def generate_graph_with_barriers(num_nodes, density=0.2, blocked_percentage=0.2):
+    nodes = [Node(x, y) for x in range(num_nodes) for y in range(num_nodes)]
+    
+    total_nodes = len(nodes)
+    num_blocked = int(total_nodes * blocked_percentage)
+    
+    blocked_nodes = set(random.sample(nodes, num_blocked))
+    
+ 
+    start = nodes[0]
+    goal = nodes[-1]
+    
+   
+    blocked_nodes.discard(start)
+    blocked_nodes.discard(goal)
+    
+   
+    graph = {node: {} for node in nodes}
+    
+   
+    for node in nodes:
+        if node in blocked_nodes:
+            continue  
+        
+        for neighbor in nodes:
+            if node != neighbor and random.random() < density and neighbor not in blocked_nodes:
+                graph[node][neighbor] = random.randint(1, 10)  
+    return graph, start, goal, len(nodes), blocked_nodes 
+
+def run_performance_test(num_nodes, density, blocked_percentage):
+
+    graph, start, goal, total_nodes, blocked_nodes = generate_graph_with_barriers(num_nodes, density, blocked_percentage)
+    start_time = time.time()
+    gbfs_visited = greedy_best_first(graph, start, goal, heuristic, blocked_nodes)
+    gbfs_time = time.time() - start_time
+    start_time = time.time()
+    astar_visited = a_star(graph, start, goal, heuristic, blocked_nodes)
+    astar_time = time.time() - start_time
+    start_time = time.time()
+    astar_visited_zeroh = a_star(graph, start, goal, zero_heuristic, blocked_nodes)  # Use zero heuristic
+    astar_time_zeroh = time.time() - start_time
+    start_time = time.time()
+    dijkstra_visited = dijkstra(graph, start, goal, blocked_nodes)
+    dijkstra_time = time.time() - start_time
+    
+    print(f"Graph size: {num_nodes}x{num_nodes} | Density: {density} | Blocked Percentage: {blocked_percentage * 100}%")
+    print(f"Greedy Best-First Search: {gbfs_visited} nodes visited out of {total_nodes}, Time: {gbfs_time:.4f}s")
+    print(f"A* Algorithm: {astar_visited} nodes visited out of {total_nodes}, Time: {astar_time:.4f}s")
+    print(f"A* Algorithm (Zero heuristic): {astar_visited_zeroh} nodes visited out of {total_nodes}, Time: {astar_time_zeroh:.4f}s")
+    print(f"Dijkstra: {dijkstra_visited} nodes visited out of {total_nodes}, Time: {dijkstra_time:.4f}s")
+    print("--------------------------------------------------------")
+
+def dijkstra(graph, start, goal, blocked_nodes):
+    open_list = [(0, start)]  
+    distances = {node: float('inf') for node in graph}
+    distances[start] = 0
+    came_from = {}
+    
+    nodes_visited = 0
+    
+    while open_list:
+        current_distance, current_node = heapq.heappop(open_list)
+        
+       
+        if current_node in blocked_nodes:
+            continue
+        
+        nodes_visited += 1
+        
+        if current_node == goal:
+            return nodes_visited
+        
+        for neighbor, weight in graph[current_node].items():
+           
+            if neighbor in blocked_nodes:
+                continue
+            distance = current_distance + weight
+            if distance < distances[neighbor]:
+                distances[neighbor] = distance
+                came_from[neighbor] = current_node
+                heapq.heappush(open_list, (distance, neighbor))
+    
+    return nodes_visited
+
+
+def greedy_best_first(graph, start, goal, heuristic, blocked_nodes):
+    open_list = [(start, heuristic(start, goal))]
+    g_cost = {start: 0}
+    f_cost = {start: heuristic(start, goal)}
+    came_from = {}
+    
+    nodes_visited = 0
+    
+    while open_list:
+        current_node, _ = heapq.heappop(open_list)
+        
+        if current_node in blocked_nodes:
+            continue
+        
+        nodes_visited += 1
+        
+        if current_node == goal:
+            return nodes_visited
+        
+        for neighbor, weight in graph[current_node].items():
+            
+            if neighbor in blocked_nodes:
+                continue
+            tentative_g = g_cost[current_node] + weight
+            if neighbor not in g_cost or tentative_g < g_cost[neighbor]:
+                came_from[neighbor] = current_node
+                g_cost[neighbor] = tentative_g
+                f_cost[neighbor] = tentative_g + heuristic(neighbor, goal)
+                heapq.heappush(open_list, (neighbor, f_cost[neighbor]))
+    
+    return nodes_visited
+
+
+def a_star(graph, start, goal, heuristic, blocked_nodes):
+    open_list = [(start, heuristic(start, goal))]
+    g_cost = {start: 0}
+    f_cost = {start: heuristic(start, goal)}
+    came_from = {}
+    
+    nodes_visited = 0
+    
+    while open_list:
+        current_node, _ = heapq.heappop(open_list)
+        if current_node in blocked_nodes:
+            continue
+        
+        nodes_visited += 1
+        
+        if current_node == goal:
+            return nodes_visited
+        
+        for neighbor, weight in graph[current_node].items():
+            if neighbor in blocked_nodes:
+                continue
+            tentative_g = g_cost[current_node] + weight
+            if neighbor not in g_cost or tentative_g < g_cost[neighbor]:
+                came_from[neighbor] = current_node
+                g_cost[neighbor] = tentative_g
+                f_cost[neighbor] = tentative_g + heuristic(neighbor, goal)
+                heapq.heappush(open_list, (neighbor, f_cost[neighbor]))
+    
+    return nodes_visited
+
+
+
+run_performance_test(50, 0.2, 0.2) 
+run_performance_test(50, 0.2, 0.4)
+run_performance_test(50, 0.2, 0.6)
+run_performance_test(50, 0.2, 0.8)
+run_performance_test(50, 0.2, 0.9)
+
