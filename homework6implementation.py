@@ -28,6 +28,9 @@ class Node:
 def zero_heuristic(a, b):
     # A non-informative heuristic that always returns zero
     return 0
+def inadmissible_heuristic(a, b):
+    # Manhattan distance overestimated by multiplying by a constant factor (e.g., 2)
+    return 2 * (abs(a.x - b.x) + abs(a.y - b.y))
 
 
 def heuristic(a, b):
@@ -90,6 +93,9 @@ def run_performance_test(num_nodes, density, blocked_percentage):
     astar_visited_zeroh = a_star(graph, start, goal, zero_heuristic, blocked_nodes)  # Use zero heuristic
     astar_time_zeroh = time.time() - start_time
     start_time = time.time()
+    astar_visited_inadmit = a_star(graph, start, goal, inadmissible_heuristic, blocked_nodes)  # Use inadmissable heuristic
+    astar_time_inadmit = time.time() - start_time
+    start_time = time.time()
     dijkstra_visited = dijkstra(graph, start, goal, blocked_nodes)
     dijkstra_time = time.time() - start_time
     
@@ -97,6 +103,7 @@ def run_performance_test(num_nodes, density, blocked_percentage):
     print(f"Greedy Best-First Search: {gbfs_visited} nodes visited out of {total_nodes}, Time: {gbfs_time:.4f}s")
     print(f"A* Algorithm: {astar_visited} nodes visited out of {total_nodes}, Time: {astar_time:.4f}s")
     print(f"A* Algorithm (Zero heuristic): {astar_visited_zeroh} nodes visited out of {total_nodes}, Time: {astar_time_zeroh:.4f}s")
+    print(f"A* Algorithm (Inadmissable heuristic): {astar_visited_inadmit} nodes visited out of {total_nodes}, Time: {astar_time_inadmit:.4f}s")
     print(f"Dijkstra: {dijkstra_visited} nodes visited out of {total_nodes}, Time: {dijkstra_time:.4f}s")
     print("--------------------------------------------------------")
 
