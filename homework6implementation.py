@@ -108,28 +108,29 @@ def run_performance_test(num_nodes, density, blocked_percentage):
     print("--------------------------------------------------------")
 
 def dijkstra(graph, start, goal, blocked_nodes):
-    open_list = [(0, start)]  
+    open_list = [(0, start)]  # (distance, node)
     distances = {node: float('inf') for node in graph}
     distances[start] = 0
     came_from = {}
     
     nodes_visited = 0
+    visited_nodes = set()  # Track visited nodes
     
     while open_list:
         current_distance, current_node = heapq.heappop(open_list)
         
-       
-        if current_node in blocked_nodes:
+        # Skip blocked nodes and already visited nodes
+        if current_node in blocked_nodes or current_node in visited_nodes:
             continue
         
+        visited_nodes.add(current_node)
         nodes_visited += 1
         
         if current_node == goal:
             return nodes_visited
         
         for neighbor, weight in graph[current_node].items():
-           
-            if neighbor in blocked_nodes:
+            if neighbor in blocked_nodes or neighbor in visited_nodes:
                 continue
             distance = current_distance + weight
             if distance < distances[neighbor]:
@@ -140,6 +141,7 @@ def dijkstra(graph, start, goal, blocked_nodes):
     return nodes_visited
 
 
+
 def greedy_best_first(graph, start, goal, heuristic, blocked_nodes):
     open_list = [(start, heuristic(start, goal))]
     g_cost = {start: 0}
@@ -147,21 +149,23 @@ def greedy_best_first(graph, start, goal, heuristic, blocked_nodes):
     came_from = {}
     
     nodes_visited = 0
+    visited_nodes = set()  # Track visited nodes
     
     while open_list:
         current_node, _ = heapq.heappop(open_list)
         
-        if current_node in blocked_nodes:
+        # Skip blocked nodes and already visited nodes
+        if current_node in blocked_nodes or current_node in visited_nodes:
             continue
         
+        visited_nodes.add(current_node)
         nodes_visited += 1
         
         if current_node == goal:
             return nodes_visited
         
         for neighbor, weight in graph[current_node].items():
-            
-            if neighbor in blocked_nodes:
+            if neighbor in blocked_nodes or neighbor in visited_nodes:
                 continue
             tentative_g = g_cost[current_node] + weight
             if neighbor not in g_cost or tentative_g < g_cost[neighbor]:
@@ -171,6 +175,7 @@ def greedy_best_first(graph, start, goal, heuristic, blocked_nodes):
                 heapq.heappush(open_list, (neighbor, f_cost[neighbor]))
     
     return nodes_visited
+
 
 
 def a_star(graph, start, goal, heuristic, blocked_nodes):
@@ -180,19 +185,23 @@ def a_star(graph, start, goal, heuristic, blocked_nodes):
     came_from = {}
     
     nodes_visited = 0
+    visited_nodes = set()  # Track visited nodes
     
     while open_list:
         current_node, _ = heapq.heappop(open_list)
-        if current_node in blocked_nodes:
+        
+        # Skip blocked nodes and already visited nodes
+        if current_node in blocked_nodes or current_node in visited_nodes:
             continue
         
+        visited_nodes.add(current_node)
         nodes_visited += 1
         
         if current_node == goal:
             return nodes_visited
         
         for neighbor, weight in graph[current_node].items():
-            if neighbor in blocked_nodes:
+            if neighbor in blocked_nodes or neighbor in visited_nodes:
                 continue
             tentative_g = g_cost[current_node] + weight
             if neighbor not in g_cost or tentative_g < g_cost[neighbor]:
@@ -204,10 +213,36 @@ def a_star(graph, start, goal, heuristic, blocked_nodes):
     return nodes_visited
 
 
+print("Running test: Small Graph, Sparse Connections, Low Blockage")
+run_performance_test(5, 0.2, 0.2)  # Small graph, 20% blocked nodes
+run_performance_test(5, 0.2, 0.4)  # Small graph, 40% blocked nodes
+run_performance_test(5, 0.2, 0.6)  # Small graph, 60% blocked nodes
 
-run_performance_test(50, 0.2, 0.2) 
-run_performance_test(50, 0.2, 0.4)
-run_performance_test(50, 0.2, 0.6)
-run_performance_test(50, 0.2, 0.8)
-run_performance_test(50, 0.2, 0.9)
+# Medium Graph, Sparse Connections
+print("\nRunning test: Medium Graph, Sparse Connections")
+run_performance_test(10, 0.2, 0.1)  # Medium graph, 10% blocked nodes
+run_performance_test(10, 0.2, 0.3)  # Medium graph, 30% blocked nodes
+run_performance_test(10, 0.2, 0.5)  # Medium graph, 50% blocked nodes
 
+# Small Graph, Dense Connections
+print("\nRunning test: Small Graph, Dense Connections")
+run_performance_test(5, 0.8, 0.1)  # Small graph, dense connections, 10% blocked nodes
+run_performance_test(5, 0.8, 0.3)  # Small graph, dense connections, 30% blocked nodes
+run_performance_test(5, 0.8, 0.5)  # Small graph, dense connections, 50% blocked nodes
+
+# Larger Graph, Dense Connections
+print("\nRunning test: Larger Graph, Dense Connections")
+run_performance_test(10, 0.8, 0.1)  # Larger graph, dense connections, 10% blocked nodes
+run_performance_test(10, 0.8, 0.3)  # Larger graph, dense connections, 30% blocked nodes
+run_performance_test(10, 0.8, 0.5)  # Larger graph, dense connections, 50% blocked nodes
+
+# Large Graph, Sparse Connections
+print("\nRunning test: Large Graph, Sparse Connections")
+run_performance_test(20, 0.2, 0.1)  # Larger graph, sparse connections, 10% blocked nodes
+run_performance_test(20, 0.2, 0.2)  # Larger graph, sparse connections, 20% blocked nodes
+run_performance_test(20, 0.2, 0.5)  # Larger graph, sparse connections, 50% blocked nodes
+
+# Extreme Blockage Case
+print("\nRunning test: Extreme Blockage")
+run_performance_test(10, 0.4, 0.7)  # Large graph, 70% blocked nodes
+run_performance_test(10, 0.4, 0.9)  # Large graph, 90% blocked nodes
